@@ -66,6 +66,9 @@ static int wsa_init = 0;
 #include "common.h"
 #include "libimobiledevice-glue/socket.h"
 
+#include <android/log.h>
+#define logAnd(...) __android_log_print(ANDROID_LOG_INFO, "libusb-glue", __VA_ARGS__)
+
 #define RECV_TIMEOUT 20000
 #define SEND_TIMEOUT 10000
 #define CONNECT_TIMEOUT 5000
@@ -143,6 +146,9 @@ LIBIMOBILEDEVICE_GLUE_API const char *socket_addr_to_string(struct sockaddr *add
 #ifndef WIN32
 LIBIMOBILEDEVICE_GLUE_API int socket_create_unix(const char *filename)
 {
+	
+	logAnd("%s","socket_create_unix 1111");
+	
 	struct sockaddr_un name;
 	int sock;
 #ifdef SO_NOSIGPIPE
@@ -155,12 +161,14 @@ LIBIMOBILEDEVICE_GLUE_API int socket_create_unix(const char *filename)
 	/* Create the socket. */
 	sock = socket(PF_UNIX, SOCK_STREAM, 0);
 	if (sock < 0) {
+		logAnd("%s","socket_create_unix 2222");
 		perror("socket");
 		return -1;
 	}
 
 #ifdef SO_NOSIGPIPE
 	if (setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (void*)&yes, sizeof(int)) == -1) {
+		logAnd("%s","socket_create_unix 3333");
 		perror("setsockopt()");
 		socket_close(sock);
 		return -1;
@@ -173,12 +181,14 @@ LIBIMOBILEDEVICE_GLUE_API int socket_create_unix(const char *filename)
 	name.sun_path[sizeof(name.sun_path) - 1] = '\0';
 
 	if (bind(sock, (struct sockaddr*)&name, sizeof(name)) < 0) {
+		logAnd("%s","socket_create_unix 44444");
 		perror("bind");
 		socket_close(sock);
 		return -1;
 	}
 
 	if (listen(sock, 100) < 0) {
+		logAnd("%s","socket_create_unix 55555");
 		perror("listen");
 		socket_close(sock);
 		return -1;
@@ -189,6 +199,9 @@ LIBIMOBILEDEVICE_GLUE_API int socket_create_unix(const char *filename)
 
 LIBIMOBILEDEVICE_GLUE_API int socket_connect_unix(const char *filename)
 {
+	
+	logAnd("%s","socket_connect_unix 1111");
+	
 	struct sockaddr_un name;
 	int sfd = -1;
 	struct stat fst;
@@ -199,6 +212,7 @@ LIBIMOBILEDEVICE_GLUE_API int socket_connect_unix(const char *filename)
 
 	// check if socket file exists...
 	if (stat(filename, &fst) != 0) {
+		logAnd("%s: stat '%s': %s\n", __func__, filename, strerror(errno));
 		if (verbose >= 2)
 			fprintf(stderr, "%s: stat '%s': %s\n", __func__, filename,
 					strerror(errno));
@@ -206,6 +220,8 @@ LIBIMOBILEDEVICE_GLUE_API int socket_connect_unix(const char *filename)
 	}
 	// ... and if it is a unix domain socket
 	if (!S_ISSOCK(fst.st_mode)) {
+		logAnd("%s: File '%s' is not a socket!\n", __func__,
+					filename);
 		if (verbose >= 2)
 			fprintf(stderr, "%s: File '%s' is not a socket!\n", __func__,
 					filename);
@@ -213,21 +229,25 @@ LIBIMOBILEDEVICE_GLUE_API int socket_connect_unix(const char *filename)
 	}
 	// make a new socket
 	if ((sfd = socket(PF_UNIX, SOCK_STREAM, 0)) < 0) {
+		logAnd("%s: socket: %s\n", __func__, strerror(errno));
 		if (verbose >= 2)
 			fprintf(stderr, "%s: socket: %s\n", __func__, strerror(errno));
 		return -1;
 	}
 
 	if (setsockopt(sfd, SOL_SOCKET, SO_SNDBUF, (void*)&bufsize, sizeof(int)) == -1) {
+		logAnd("%s","Could not set send buffer for socket");
 		perror("Could not set send buffer for socket");
 	}
 
 	if (setsockopt(sfd, SOL_SOCKET, SO_RCVBUF, (void*)&bufsize, sizeof(int)) == -1) {
+		logAnd("%s","Could not set receive buffer for socket");
 		perror("Could not set receive buffer for socket");
 	}
 
 #ifdef SO_NOSIGPIPE
 	if (setsockopt(sfd, SOL_SOCKET, SO_NOSIGPIPE, (void*)&yes, sizeof(int)) == -1) {
+		logAnd("%s","setsockopt()");
 		perror("setsockopt()");
 		socket_close(sfd);
 		return -1;
@@ -243,6 +263,7 @@ LIBIMOBILEDEVICE_GLUE_API int socket_connect_unix(const char *filename)
 
 	do {
 		if (connect(sfd, (struct sockaddr*)&name, sizeof(name)) != -1) {
+			logAnd("%s","socket_connect_unix 4444");
 			break;
 		}
 		if (errno == EINPROGRESS) {
@@ -267,10 +288,13 @@ LIBIMOBILEDEVICE_GLUE_API int socket_connect_unix(const char *filename)
 	} while (0);
 
 	if (sfd < 0) {
+		logAnd("%s: connect: %s\n", __func__, strerror(errno));
 		if (verbose >= 2)
 			fprintf(stderr, "%s: connect: %s\n", __func__, strerror(errno));
 		return -1;
 	}
+	
+	logAnd("%s","socket_connect_unix 6666");
 
 	return sfd;
 }
