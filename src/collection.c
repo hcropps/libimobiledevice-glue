@@ -30,6 +30,10 @@
 #include "common.h"
 #include "libimobiledevice-glue/collection.h"
 
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
+
 #undef NDEBUG // we need to make sure we still get assertions because we can't handle memory allocation errors
 #include <assert.h>
 
@@ -84,10 +88,14 @@ LIBIMOBILEDEVICE_GLUE_API int collection_remove(struct collection *col, void *el
 
 LIBIMOBILEDEVICE_GLUE_API int collection_count(struct collection *col)
 {
+	__android_log_print(ANDROID_LOG_DEBUG, "libusb", "libusb glue collection_count capacity %d",col->capacity);
 	int i, cnt = 0;
 	for(i=0; i<col->capacity; i++) {
-		if(col->list[i])
+		__android_log_print(ANDROID_LOG_DEBUG, "libusb", "libusb glue collection_count i %d",i);
+		if(col->list[i]){
+			__android_log_print(ANDROID_LOG_DEBUG, "libusb", "libusb glue collection_count i 222 %d",i);
 			cnt++;
+		}
 	}
 	return cnt;
 }
